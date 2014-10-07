@@ -1,0 +1,31 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.provision :shell, path: "bootstrap/all.sh"
+  config.vbguest.auto_update = true
+
+  not_dbs = {
+              :wordpress02  => '192.168.101.102'
+            }
+
+  not_dbs.each do |not_db_name, not_db_ip|
+    config.vm.define not_db_name do |server_config|
+      bootstrap_path = "bootstrap/#{not_db_name}_su.sh"
+      bootstrap_path_user = "bootstrap/#{not_db_name}_user.sh"
+      server_config.vm.box = "hashicorp/precise64"
+      server_config.vm.hostname = not_db_name.to_s
+      server_config.vm.network "private_network", ip: not_db_ip
+      server_config.vm.network "forwarded_port", guest: 80, host: 2080
+      server_config.vm.provision :shell, path: bootstrap_path
+      server_config.vm.provision :shell, path: bootstrap_path_user, privileged: false
+
+      server_config.vm.provider :virtualbox do |v|
+        v.customize ["modifyvm", :id, "--memory", "384"]
+        v.customize ["modifyvm", :id, "--cpus", "1"]
+      end
+    end
+  end
+end
