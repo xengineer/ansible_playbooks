@@ -8,11 +8,14 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get install -y mysql-server
 apt-get install -y php5-mysql
 apt-get install -y python-mysqldb
+apt-get install -y python-simplejson
 
 apt-get install -y git
 apt-get install -y python-setuptools
 apt-get install -y python-dev
 apt-get install -y libyaml-dev
+easy_install pip
+pip install paramiko PyYAML jinja2 httplib2
 
 git clone git://github.com/ansible/ansible.git
 cd ./ansible
@@ -20,8 +23,17 @@ source ./hacking/env-setup
 echo "source ~/ansible/hacking/env-setup" >> ~/.bashrc
 git checkout refs/tags/v1.7.2
 
-easy_install pip
-pip install paramiko PyYAML jinja2 httplib2
+# Create ansible user and ansible group
+addgroup --gid 20001 ansible
+adduser --no-create-home --uid 20001 --gid 20001 --disabled-password --disabled-login --gecos ansible ansible
+
+# include vagrant to ansible group
+adduser vagrant ansible
+
+# Create log file for ansible with ansible group
+touch /var/log/ansible.log
+chgrp ansible /var/log/ansible.log
+chmod 777 /var/log/ansible.log
 
 mkdir -p /etc/ansible
 mkdir -p /etc/ansible/playbooks/wordpress
@@ -31,16 +43,16 @@ cp /vagrant/conf/ansible.cfg /etc/ansible
 
 cat <<EOF > /etc/ansible/hosts
 [ansible]
-192.168.101.101
+192.168.101.102
 
 [wordpress]
-192.168.101.101
+192.168.101.102
 
 [web]
-192.168.101.101
+192.168.101.102
 
 [db]
-192.168.101.101
+192.168.101.102
 EOF
 
 cat <<EOF > /etc/ansible/playbooks/wordpress/wordpress-playbook.yml
@@ -135,7 +147,7 @@ cat <<EOF > /etc/ansible/playbooks/wordpress/wordpress-playbook.yml
     mysql_db: name=mywp_db state=present
   - name: Create Wordpress database user
     mysql_user: name=wp-user password=""
-                priv=mywp_db.*:SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,DROP,INDEX
+                priv=*.*:SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,DROP,INDEX
                 host='localhost' state=present
   - name: Copy Wordpress config file
     template: src=/vagrant/conf/wp-config.php dest=/etc/wordpress/
