@@ -45,4 +45,6 @@ cp /vagrant/ansible/hosts /etc/ansible
 cp /vagrant/ansible/wordpress-playbook.yml /etc/ansible/playbooks/wordpress/
 cp /vagrant/conf/fluentd/td-agent.conf /etc/td-agent/
 
+chmod 666 /etc/ansible/hosts
+
 /vagrant/bootstrap/not_db.sh
